@@ -1,0 +1,2 @@
+defmodule Moneywave do
+end
