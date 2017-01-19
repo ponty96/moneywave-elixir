@@ -18,7 +18,7 @@ defmodule Moneywave.Base do
   @moduledoc """
     Main module for handling sending/receiving messages from Moneywave's Api
   """
-
+  alias Moneywave.Errors
   @client_version Mix.Project.config[:version]
   @api_base "https://moneywave.herokuapp.com/"
   @api_key Application.get_env(:moneywave, :api_key, System.get_env("MONEYWAVE_API_KEY"))
@@ -59,13 +59,35 @@ defmodule Moneywave.Base do
     data = 
       form
       |> Poison.encode!
+
     HTTPoison.request(action, process_url(endpoint), data, create_headers())
     |> handle_response
   end
 
+  # defp handle_response({:ok, %{body: {"status": "error"}, status_code: code}}), do: process_error(body, code)
   defp handle_response({:ok, %{body: body, status_code: code}}) when code in 200..299 do
-    IO.inspect process_response_body(body)
     {:ok, process_response_body(body)}
+  end
+
+  defp handle_response({:ok, %{body: body, status_code: code}}) do
+    process_error(body, code)
+  end
+
+  defp process_error(body, code) do
+    %{"message" => message} = error =
+      body
+      |> process_response_body
+      |> Map.fetch!("error")
+
+    error_struct =
+      case code do
+        400 -> %Errors.BadRequest{message: message, param: error["param"]}
+        401 -> %Errors.Authorization{message: message}
+        404 -> %Errors.NotFound{message: message}
+        _ -> %Errors.BadRequest{message: message, param: error["param"]}
+      end
+
+    {:error, error_struct}
   end
 
   defp process_response_body(body) do
