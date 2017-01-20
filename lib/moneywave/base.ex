@@ -60,7 +60,7 @@ defmodule Moneywave.Base do
       form
       |> Poison.encode!
 
-    HTTPoison.request(action, process_url(endpoint), data, create_headers())
+    HTTPoison.request(action, process_url(endpoint), data, create_headers(), [connect_timeout: 50000, recv_timeout: 50000, timeout: 50000])
     |> handle_response
   end
 
@@ -77,7 +77,6 @@ defmodule Moneywave.Base do
     %{"message" => message} = error =
       body
       |> process_response_body
-      |> Map.fetch!("error")
 
     error_struct =
       case code do
