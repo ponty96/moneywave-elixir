@@ -1,6 +1,6 @@
 # Moneywave
 
-**TODO: Add description**
+**Work in progress**
 
 ## Installation
 
